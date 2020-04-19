@@ -1,0 +1,22 @@
+#playbutton
+{
+    -fx-background-color: LIGHTSLATEGREY;
+    -fx-text-fill: white; 
+}
+#updateImages
+{
+    -fx-background-color: LIGHTSLATEGREY;
+    -fx-text-fill: white; 
+}
+.root
+{
+    -fx-background-color:DARKSEAGREEN; 
+}
+#search
+{
+     -fx-font: normal 15px 'ELEHANT'
+}
+#courtesy
+{
+     -fx-font: normal 15px 'ELEHANT' 
+}

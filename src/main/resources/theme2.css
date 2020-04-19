@@ -1,0 +1,22 @@
+#playbutton
+{
+    -fx-background-color: GRAY;
+    -fx-text-fill: white; 
+}
+#updateImages
+{
+    -fx-background-color: GRAY;
+    -fx-text-fill: white; 
+}
+.root
+{
+    -fx-background-color: SANDYBROWN; 
+}
+#search
+{
+     -fx-font: normal 15px 'VERDANA'
+}
+#courtesy
+{
+     -fx-font: normal 15px 'VERDANA' 
+}
