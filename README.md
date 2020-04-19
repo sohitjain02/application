@@ -9,8 +9,18 @@ This setting will allow access to all the classes in any packages beginning java
 
 2. How to change name, email, version number and title for About Me page?
 Under Help->About in the applcation, there is configurable name and email set. To set it to your name, follow below steps:
-1. In project, Go to /cs1302-gallery/src/main/java/cs1302/gallery/GalleryAppConstants.java file.
-2. Update your name, email and version under below constants:
+* In project, Go to /cs1302-gallery/src/main/java/cs1302/gallery/GalleryAppConstants.java file.
+* Update your name, email and version under below constants:
 	public static final String MY_NAME = "Sohit Jain";
 	public static final String MY_EMAIL = "sohitjain02@gmail.com";
 	public static final String MY_APPLICATION_VERSION = "1.0";
+
+3. How do I change the image in the About Me page?
+To change the image to your image in the About Me page of your application, follow below steps:
+* In the source code, got to src/main/resources folder.
+* There is an image named /cs1302-gallery/src/main/resources/my_image.jpg
+* Replace my_image.jpg with your image.
+* The pixel dimensions of your image should be 250x187. If in case image size is large then you need to adjust UI of About Me page accordingly.
+* If you name the image something else other than my_image.jpg, then update the location of your image under below constant in 
+/cs1302-gallery/src/main/java/cs1302/gallery/GalleryAppConstants.java file.
+public static final String MY_IMAGE_PATH = "/my_image.jpg";
