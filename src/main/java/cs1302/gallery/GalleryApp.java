@@ -19,6 +19,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.geometry.VPos;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
@@ -172,6 +173,7 @@ public class GalleryApp extends Application {
 				searchField.setDisable(false);
 				searchField.setPromptText(GalleryAppConstants.DEFAULT_QUERY);
                 if (GalleryApp.imagesList.size() >= 21) {
+                	imagesGrid.getChildren().clear();
 					updateImageGridPane(imagesGrid);
 				}
             	task.cancel(true);
@@ -286,7 +288,7 @@ public class GalleryApp extends Application {
     
     /**
      * 
-     * This method is resonsible for updating te images in the grid based on the query entered by user. 
+     * This method is responsible for updating the images in the grid based on the query entered by user. 
      * This event will initiate a background call to Task that is {@Code LoadImagesTask} which will query the iTunes search API
      * for searchText and update the images in the imagesGrid. If the imageRefresh event is in play mode it will stop that event.
      * 
@@ -326,6 +328,7 @@ public class GalleryApp extends Application {
                                 if (imageUrls.size() >= 21) {
                                 	GalleryApp.imagesList.clear();
                                 	GalleryApp.imagesList.addAll(imageUrls);
+                                	imagesGrid.getChildren().clear();
     								updateImageGridPane(imagesGrid);
     								task.cancel(true);
     							} else {
@@ -412,6 +415,12 @@ public class GalleryApp extends Application {
     				URL url = new URL(imageURL);
     				Image image = new Image(url.openStream());
     				ImageView imageView = new ImageView(image);
+    				for(Node imageNode : imagesGrid.getChildren()) { // Loop to traverse the to the node to be updated
+    				    if(imageNode instanceof ImageView && GridPane.getRowIndex(imageNode) == j && GridPane.getColumnIndex(imageNode) == i) {
+    				    	imagesGrid.getChildren().remove(imageNode); // remove node at i'th column and j'th row 
+    				        break;
+    				    }
+    				}
     	            imagesGrid.add(imageView, i, j); //update new image in grid
     			} catch (IOException ex) {
     				ex.printStackTrace();
