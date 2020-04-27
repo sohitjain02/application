@@ -57,14 +57,12 @@ public class GalleryApp extends Application {
     public void start(Stage primaryStage) throws Exception {
 		
     	BorderPane root = new BorderPane(); // root node of the scene graph
-		
 		Scene scene = new Scene(root, 200, 300);
 		
 		/* Border pane has 3 regions 
 		 * 1. Menu Bar at the top
 		 * 2. Vbox in centre having main content area(Play/Pause button, Search Text and Update Image button and Images Grid)
 		 * 3. ProgressBar and Courtesy text at the bottom
-		 * 
 		 */
 		MenuBar menubar = new MenuBar();
 		VBox vBox = new VBox();
@@ -74,11 +72,69 @@ public class GalleryApp extends Application {
         root.setCenter(vBox);
         root.setBottom(progressBar);
         
-		/* 
-		 * Menu Bar Items Starts 
-		 */
-        /* 1. File Menu */
-        Menu fileMenu = new Menu(GalleryAppConstants.FILE_MENU_TITLE);    
+        applyMenuBar(menubar, scene); // Set menu items on menu bar and define action handlers
+      
+        /* Progress Bar Start */
+        ProgressBar progress = new ProgressBar(0);      
+        Text courtesy = new Text();  
+        courtesy.setText(GalleryAppConstants.COURTESY_TEXT);
+        courtesy.setId(GalleryAppConstants.COURTESY_TEXT_ID);        
+        progressBar.getChildren().addAll(progress, courtesy);
+        progressBar.setSpacing(15);
+        /* Progress Bar Ends */
+        
+        /* Buttons and Search Bar Start*/
+        HBox searchHandler = new HBox();
+        Button play = new Button(GalleryAppConstants.PLAY);
+        play.setDisable(true);
+        play.setId(GalleryAppConstants.PLAY_BUTTON_ID);   
+        Separator sepVert = new Separator();
+        sepVert.setOrientation(Orientation.VERTICAL);
+        sepVert.setValignment(VPos.CENTER);  
+        Text searchText = new Text();  
+        searchText.setText(GalleryAppConstants.SEARCH_LABEL_TEXT);
+        searchText.setId(GalleryAppConstants.SEARCH_LABEL_TEXT_ID); 
+        TextField searchField = new TextField();
+        searchField.setPromptText(GalleryAppConstants.DEFAULT_QUERY);
+        searchField.setDisable(true);        
+        Button updateImages = new Button(GalleryAppConstants.UPDATE_IMAGES_BUTTON_TEXT);
+        updateImages.setDisable(true);
+        updateImages.setId(GalleryAppConstants.UPDATE_IMAGES_BUTTON_ID);    
+        searchHandler.getChildren().addAll(play, sepVert, searchText, searchField, updateImages);
+        searchHandler.setSpacing(15);
+        searchHandler.setPadding(new Insets(10, 10, 10, 10));
+        /* Buttons and Search Bar End*/
+        
+        /* Images Grid Start*/
+        GridPane imagesGrid = new GridPane();
+        imagesGrid.setPadding(new Insets(10, 10, 10, 10));
+        /* Images Grid End */
+        
+        vBox.getChildren().addAll(searchHandler, imagesGrid);
+        
+        loadInitialImages(progress, play, searchField, updateImages, imagesGrid); //Load Initial Images as per default query
+              
+		Timeline timeline = getTimelineForImageRefresh(imagesGrid); //Timeline object for image refresh
+		
+        play.setOnAction(setActionEventForPlay(timeline)); //play Button Action
+        
+        updateImages.setOnAction(setActionEventForUpdateImages(searchField, imagesGrid, progress, play, timeline)); //updateImages action
+        
+        setPrimaryStageProperties(primaryStage); //set Primary stage properties
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    } // start
+
+	/**
+	 * This method is responsible for setting the menubar options on the application and 
+	 * providing with the relevant action handlers for each of the MenuItem.
+	 * 
+	 * @param menubar Reference to Menubar set on the root
+	 * @param scene Reference to scene object of the application
+	 */
+	private void applyMenuBar(MenuBar menubar, Scene scene) {
+		/* 1. File Menu */
+		Menu fileMenu = new Menu(GalleryAppConstants.FILE_MENU_TITLE);    
         MenuItem exit = new MenuItem(GalleryAppConstants.EXIT_MENU_ITEM);
         exit.setId(GalleryAppConstants.EXIT_MENU_ITEM_ID);
         fileMenu.getItems().addAll(exit); 
@@ -111,61 +167,54 @@ public class GalleryApp extends Application {
         theme1.setOnAction(setMenuItemsEvent(scene)); //action for Theme -> Theme1 menu
         theme2.setOnAction(setMenuItemsEvent(scene)); //action for Theme -> Theme2 menu
         about.setOnAction(setMenuItemsEvent(scene)); //action for Help -> About menu
-        /* Menu Bar Items Ends */
-        
-        /* Progress Bar Start */
-        ProgressBar progress = new ProgressBar(0); 
-        
-        Text courtesy = new Text();  
-        courtesy.setText(GalleryAppConstants.COURTESY_TEXT);
-        courtesy.setId(GalleryAppConstants.COURTESY_TEXT_ID);
-        
-        progressBar.getChildren().addAll(progress, courtesy);
-        progressBar.setSpacing(15);
-        /* Progress Bar Ends */
-        
-        /* Buttons and Search Bar Start*/
-        HBox searchHandler = new HBox();
-        Button play = new Button(GalleryAppConstants.PLAY);
-        play.setDisable(true);
-        play.setId(GalleryAppConstants.PLAY_BUTTON_ID);
-        
-        Separator sepVert = new Separator();
-        sepVert.setOrientation(Orientation.VERTICAL);
-        sepVert.setValignment(VPos.CENTER);
-        
-        Text searchText = new Text();  
-        searchText.setText(GalleryAppConstants.SEARCH_LABEL_TEXT);
-        searchText.setId(GalleryAppConstants.SEARCH_LABEL_TEXT_ID);
-        
-        TextField searchField = new TextField();
-        searchField.setPromptText(GalleryAppConstants.DEFAULT_QUERY);
-        searchField.setDisable(true);
-        
-        Button updateImages = new Button(GalleryAppConstants.UPDATE_IMAGES_BUTTON_TEXT);
-        updateImages.setDisable(true);
-        updateImages.setId(GalleryAppConstants.UPDATE_IMAGES_BUTTON_ID);
-        
-        searchHandler.getChildren().addAll(play, sepVert, searchText, searchField, updateImages);
-        searchHandler.setSpacing(15);
-        searchHandler.setPadding(new Insets(10, 10, 10, 10));
-        /* Buttons and Search Bar End*/
-        
-        /* Images Grid Start*/
-        GridPane imagesGrid = new GridPane();
-        imagesGrid.setPadding(new Insets(10, 10, 10, 10));
-        /* Images Grid End */
-        
-        vBox.getChildren().addAll(searchHandler, imagesGrid);
-        
-        /* Load Initial Images as per default query (Start)*/
-        LoadImagesTask task = new LoadImagesTask(GalleryAppConstants.DEFAULT_QUERY);
+	}
+
+	/**
+	 * This method is responsible for setting the properties of the primary stage of the application.
+	 * 
+	 * @param primaryStage Stage reference of the application
+	 */
+	private void setPrimaryStageProperties(Stage primaryStage) {
+		primaryStage.setMaxWidth(1280);
+        primaryStage.setMaxHeight(720);
+        primaryStage.setMinWidth(580);
+        primaryStage.setMinHeight(580);
+        primaryStage.setWidth(580);
+        primaryStage.setHeight(580);
+        primaryStage.setTitle(GalleryAppConstants.APPLICATION_TITLE);
+        primaryStage.getIcons().add(new Image(GalleryAppConstants.APPLICATION_ICON_PATH));        
+	}
+
+	/**
+	 * This method is responsible for providing the Timeline object rwhich will be esponsible for image refresh every 2 seconds.
+	 * 
+	 * @param imagesGrid
+	 * @return Timeline object responsible for image refresh every 2 seconds
+	 */
+	private Timeline getTimelineForImageRefresh(GridPane imagesGrid) {
+		KeyFrame keyFrame = new KeyFrame(Duration.seconds(2), createImageRefreshEvent(imagesGrid));
+		Timeline timeline = new Timeline();
+		timeline.setCycleCount(Timeline.INDEFINITE);
+		timeline.getKeyFrames().add(keyFrame);
+		return timeline;
+	}
+
+	/**
+	 * This method is responsible for loading the initial set of images as per default query.
+	 * 
+	 * @param progress Progress bar in the scene
+	 * @param play Play button in the scene
+	 * @param searchField Search field of query in the scene
+	 * @param updateImages Update Images button in the scene
+	 * @param imagesGrid Images Grid in the scene
+	 */
+	private void loadInitialImages(ProgressBar progress, Button play, TextField searchField, Button updateImages,
+			GridPane imagesGrid) {
+		LoadImagesTask task = new LoadImagesTask(GalleryAppConstants.DEFAULT_QUERY);
     	progress.setProgress(0);
         progress.progressProperty().unbind();
         progress.progressProperty().bind(task.progressProperty());
-        task.addEventHandler(WorkerStateEvent.WORKER_STATE_SUCCEEDED, new EventHandler<WorkerStateEvent>() {
-            @Override
-            public void handle(WorkerStateEvent t) {
+        task.addEventHandler(WorkerStateEvent.WORKER_STATE_SUCCEEDED, (e -> {
                 List<String> imageUrls = task.getValue();
                 GalleryApp.imagesList.addAll(imageUrls);
                 play.setDisable(false);
@@ -178,11 +227,8 @@ public class GalleryApp extends Application {
 				}
             	task.cancel(true);
 	            progress.progressProperty().unbind();
-            }
-        });
-        task.addEventHandler(WorkerStateEvent.WORKER_STATE_FAILED, new EventHandler<WorkerStateEvent>() {
-            @Override
-            public void handle(WorkerStateEvent t) {
+        }));
+        task.addEventHandler(WorkerStateEvent.WORKER_STATE_FAILED, (e -> {
 				Alert alert = new Alert(AlertType.ERROR);
 			    alert.setTitle(GalleryAppConstants.ALERT_TITLE);
 			    alert.setContentText(GalleryAppConstants.IMAGE_LOAD_FAILURE_MESSAGE);
@@ -192,36 +238,11 @@ public class GalleryApp extends Application {
 			    	Platform.exit();
 			    	System.exit(0);
 			    }
-            }
-        });
+        }));
         Thread t = new Thread(task);
         t.setDaemon(true);
         t.start();
-        /* Load Initial Images as per default query (End)*/
-        
-        /* Refresh Image Thread using Timeline (Start) */
-        EventHandler<ActionEvent> handler = createImageRefreshEvent(imagesGrid);
-		KeyFrame keyFrame = new KeyFrame(Duration.seconds(2), handler);
-		Timeline timeline = new Timeline();
-		timeline.setCycleCount(Timeline.INDEFINITE);
-		timeline.getKeyFrames().add(keyFrame);
-		/* Refresh Image Thread using Timeline (End) */
-		
-        play.setOnAction(setActionEventForPlay(timeline)); //play Button Action
-        
-        updateImages.setOnAction(setActionEventForUpdateImages(searchField, imagesGrid, progress, play, timeline)); //updateImages action
-        
-        primaryStage.setMaxWidth(1280);
-        primaryStage.setMaxHeight(720);
-        primaryStage.setMinWidth(580);
-        primaryStage.setMinHeight(580);
-        primaryStage.setWidth(580);
-        primaryStage.setHeight(580);
-        primaryStage.setTitle(GalleryAppConstants.APPLICATION_TITLE);
-        primaryStage.getIcons().add(new Image(GalleryAppConstants.APPLICATION_ICON_PATH));
-        primaryStage.setScene(scene);  
-        primaryStage.show();
-    } // start
+	}
     
     /**
      * This method is responsible for defining the action event for all menu items.
@@ -234,28 +255,24 @@ public class GalleryApp extends Application {
      * @param scene Menus present in this scene
      * @return EventHandler<ActionEvent> Represents Event handler for all menus and menu items
      */
-    private EventHandler<ActionEvent> setMenuItemsEvent(Scene scene) {
-    	EventHandler<ActionEvent> menuItemEvent = new EventHandler<ActionEvent>() { 
-            public void handle(ActionEvent e) 
-            { 
-            	MenuItem menuItem = (MenuItem)e.getSource();
-                if (menuItem.getId().equalsIgnoreCase(GalleryAppConstants.EXIT_MENU_ITEM_ID)) { //exit menu
-                	Platform.exit();
-                    System.exit(0);
-                } else if (menuItem.getId().equalsIgnoreCase(GalleryAppConstants.THEME_MENU_ITEM_DEFAULT_ID)) { //default theme menu
-                	scene.getStylesheets().remove(0, scene.getStylesheets().size());
-                } else if (menuItem.getId().equalsIgnoreCase(GalleryAppConstants.THEME_MENU_ITEM1_ID)) { //theme1 menu
-                	scene.getStylesheets().remove(0, scene.getStylesheets().size());
-                	scene.getStylesheets().add("theme1.css");
-                } else if (menuItem.getId().equalsIgnoreCase(GalleryAppConstants.THEME_MENU_ITEM2_ID)) { //theme2 menu
-                	scene.getStylesheets().remove(0, scene.getStylesheets().size());
-                	scene.getStylesheets().add("theme2.css");
-                } else if (menuItem.getId().equalsIgnoreCase(GalleryAppConstants.ABOUT_MENU_ITEM_ID)) { //about menu
-                	createAboutMeStage();
-                }
-            } 
-        };
-        return menuItemEvent;
+    private EventHandler<ActionEvent> setMenuItemsEvent(Scene scene) { 	
+    	return (e -> {
+    		MenuItem menuItem = (MenuItem)e.getSource();
+            if (menuItem.getId().equalsIgnoreCase(GalleryAppConstants.EXIT_MENU_ITEM_ID)) { //exit menu
+            	Platform.exit();
+                System.exit(0);
+            } else if (menuItem.getId().equalsIgnoreCase(GalleryAppConstants.THEME_MENU_ITEM_DEFAULT_ID)) { //default theme menu
+            	scene.getStylesheets().remove(0, scene.getStylesheets().size());
+            } else if (menuItem.getId().equalsIgnoreCase(GalleryAppConstants.THEME_MENU_ITEM1_ID)) { //theme1 menu
+            	scene.getStylesheets().remove(0, scene.getStylesheets().size());
+            	scene.getStylesheets().add("theme1.css");
+            } else if (menuItem.getId().equalsIgnoreCase(GalleryAppConstants.THEME_MENU_ITEM2_ID)) { //theme2 menu
+            	scene.getStylesheets().remove(0, scene.getStylesheets().size());
+            	scene.getStylesheets().add("theme2.css");
+            } else if (menuItem.getId().equalsIgnoreCase(GalleryAppConstants.ABOUT_MENU_ITEM_ID)) { //about menu
+            	createAboutMeStage();
+            }
+    	});
     }
     
     /**
@@ -268,22 +285,18 @@ public class GalleryApp extends Application {
      * @return EventHandler<ActionEvent> Represents action event for Play/Pause button
      */
     private EventHandler<ActionEvent> setActionEventForPlay(Timeline timeline) {
-    	EventHandler<ActionEvent> playButtonEvent = new EventHandler<ActionEvent>() { 
-            public void handle(ActionEvent e) 
-            { 
-            	Button buttonNode = (Button) e.getSource();
-                if (buttonNode.getId().equalsIgnoreCase(GalleryAppConstants.PLAY_BUTTON_ID)) {
-                	if (buttonNode.getText().equalsIgnoreCase(GalleryAppConstants.PLAY)) {
-                		buttonNode.setText(GalleryAppConstants.PAUSE);
-                		timeline.play();
-                	} else {
-                		buttonNode.setText(GalleryAppConstants.PLAY);
-                		timeline.stop();
-                	}
-                }
-            } 
-        };
-        return playButtonEvent;
+        return (e -> {
+        	Button buttonNode = (Button) e.getSource();
+            if (buttonNode.getId().equalsIgnoreCase(GalleryAppConstants.PLAY_BUTTON_ID)) {
+            	if (buttonNode.getText().equalsIgnoreCase(GalleryAppConstants.PLAY)) {
+            		buttonNode.setText(GalleryAppConstants.PAUSE);
+            		timeline.play();
+            	} else {
+            		buttonNode.setText(GalleryAppConstants.PLAY);
+            		timeline.stop();
+            	}
+            }
+        });
     }
     
     /**
@@ -302,66 +315,56 @@ public class GalleryApp extends Application {
      */
     private EventHandler<ActionEvent> setActionEventForUpdateImages(TextField searchText, GridPane imagesGrid, 
     		ProgressBar progress, Button play, Timeline timeline) {
-    	EventHandler<ActionEvent> playButtonEvent = new EventHandler<ActionEvent>() { 
-            public void handle(ActionEvent e) 
-            { 
-            	Button buttonNode = (Button) e.getSource();
-            	if (null != searchText.getText() && searchText.getText().length() > 0) {
-	                if (buttonNode.getId().equalsIgnoreCase(GalleryAppConstants.UPDATE_IMAGES_BUTTON_ID)) {
-	                	play.setDisable(true); //disable play button
-	                	buttonNode.setDisable(true); //disable updateImages button
-	                	if (Status.RUNNING.equals(timeline.getStatus())) { //stop the tieline for image refresh if it is running
-	                		timeline.stop();
-	                	}
-	                	LoadImagesTask task = new LoadImagesTask(searchText.getText());
-	                	progress.setProgress(0);
-	                    progress.progressProperty().unbind();
-	                    progress.progressProperty().bind(task.progressProperty());
-	                    task.addEventHandler(WorkerStateEvent.WORKER_STATE_SUCCEEDED, new EventHandler<WorkerStateEvent>() {
-                            @Override
-                            public void handle(WorkerStateEvent t) {
-                                List<String> imageUrls = task.getValue();
-					            progress.progressProperty().unbind();
-                                play.setDisable(false);
-                                play.setText(GalleryAppConstants.PLAY);
-        	                	buttonNode.setDisable(false);
-                                if (imageUrls.size() >= 21) {
-                                	GalleryApp.imagesList.clear();
-                                	GalleryApp.imagesList.addAll(imageUrls);
-                                	imagesGrid.getChildren().clear();
-    								updateImageGridPane(imagesGrid);
-    								task.cancel(true);
-    							} else {
-    								Alert alert = new Alert(AlertType.ERROR);
-    							    alert.setTitle(GalleryAppConstants.ALERT_TITLE);
-    							    alert.setContentText(GalleryAppConstants.ALERT_MESSAGE);
-    							    alert.showAndWait();
-    							}
-                                task.cancel(true);
-                            }
-                        });
-	                    task.addEventHandler(WorkerStateEvent.WORKER_STATE_FAILED, new EventHandler<WorkerStateEvent>() {
-                            @Override
-                            public void handle(WorkerStateEvent t) {
-        						Alert alert = new Alert(AlertType.ERROR);
-        					    alert.setTitle(GalleryAppConstants.ALERT_TITLE);
-        					    alert.setContentText(GalleryAppConstants.IMAGE_LOAD_FAILURE_MESSAGE);
-        					    Optional<ButtonType> result = alert.showAndWait();
-        					    if (result.get() == ButtonType.OK) {
-        					    	task.cancel(true);
-        					    	Platform.exit();
-        					    	System.exit(0);
-        					    }
-                            }
-	                    });
-	                    Thread t = new Thread(task);
-	                    t.setDaemon(true);
-	                    t.start();
-	                }
-            	}
-            } 
-        };
-        return playButtonEvent;
+    	return (e -> {
+    		Button buttonNode = (Button) e.getSource();
+        	if (null != searchText.getText() && searchText.getText().length() > 0) {
+                if (buttonNode.getId().equalsIgnoreCase(GalleryAppConstants.UPDATE_IMAGES_BUTTON_ID)) {
+                	play.setDisable(true); //disable play button
+                	buttonNode.setDisable(true); //disable updateImages button
+                	if (Status.RUNNING.equals(timeline.getStatus())) { //stop the tieline for image refresh if it is running
+                		timeline.stop();
+                	}
+                	LoadImagesTask task = new LoadImagesTask(searchText.getText());
+                	progress.setProgress(0);
+                    progress.progressProperty().unbind();
+                    progress.progressProperty().bind(task.progressProperty());
+                    task.addEventHandler(WorkerStateEvent.WORKER_STATE_SUCCEEDED, (t1 -> {
+                    	List<String> imageUrls = task.getValue();
+			            progress.progressProperty().unbind();
+                        play.setDisable(false);
+                        play.setText(GalleryAppConstants.PLAY);
+	                	buttonNode.setDisable(false);
+                        if (imageUrls.size() >= 21) {
+                        	GalleryApp.imagesList.clear();
+                        	GalleryApp.imagesList.addAll(imageUrls);
+                        	imagesGrid.getChildren().clear();
+							updateImageGridPane(imagesGrid);
+							//task.cancel(true);
+						} else {
+							Alert alert = new Alert(AlertType.ERROR);
+						    alert.setTitle(GalleryAppConstants.ALERT_TITLE);
+						    alert.setContentText(GalleryAppConstants.ALERT_MESSAGE);
+						    alert.showAndWait();
+						}
+                        task.cancel(true);
+                    }));
+                    task.addEventHandler(WorkerStateEvent.WORKER_STATE_FAILED, (t2 -> {
+                    	Alert alert = new Alert(AlertType.ERROR);
+					    alert.setTitle(GalleryAppConstants.ALERT_TITLE);
+					    alert.setContentText(GalleryAppConstants.IMAGE_LOAD_FAILURE_MESSAGE);
+					    Optional<ButtonType> result = alert.showAndWait();
+					    if (result.get() == ButtonType.OK) {
+					    	task.cancel(true);
+					    	Platform.exit();
+					    	System.exit(0);
+					    }
+                    }));
+                    Thread t = new Thread(task);
+                    t.setDaemon(true);
+                    t.start();
+                }
+        	}
+    	});
     }
     
     /**
@@ -404,30 +407,26 @@ public class GalleryApp extends Application {
      * 
      */
     private EventHandler<ActionEvent> createImageRefreshEvent(GridPane imagesGrid) {
-    	EventHandler<ActionEvent> imageRefreshEvent = new EventHandler<ActionEvent>() { 
-            public void handle(ActionEvent e) 
-            { 
-            	Random rand = new Random();
-            	int i = rand.nextInt(5); //randomly select column number in grid of image to update
-            	int j = rand.nextInt(4); //randomly select row number in grid of image to update
-            	String imageURL = GalleryApp.imagesList.get(rand.nextInt(GalleryApp.imagesList.size())); //random selection of image from all image URL's
-    			try {
-    				URL url = new URL(imageURL);
-    				Image image = new Image(url.openStream());
-    				ImageView imageView = new ImageView(image);
-    				for(Node imageNode : imagesGrid.getChildren()) { // Loop to traverse the to the node to be updated
-    				    if(imageNode instanceof ImageView && GridPane.getRowIndex(imageNode) == j && GridPane.getColumnIndex(imageNode) == i) {
-    				    	imagesGrid.getChildren().remove(imageNode); // remove node at i'th column and j'th row 
-    				        break;
-    				    }
-    				}
-    	            imagesGrid.add(imageView, i, j); //update new image in grid
-    			} catch (IOException ex) {
-    				ex.printStackTrace();
-    			}
-            }
-        };
-        return imageRefreshEvent;
+        return (e -> {
+        	Random rand = new Random();
+        	int i = rand.nextInt(5); //randomly select column number in grid of image to update
+        	int j = rand.nextInt(4); //randomly select row number in grid of image to update
+        	String imageURL = GalleryApp.imagesList.get(rand.nextInt(GalleryApp.imagesList.size())); //random selection of image from all image URL's
+			try {
+				URL url = new URL(imageURL);
+				Image image = new Image(url.openStream());
+				ImageView imageView = new ImageView(image);
+				for(Node imageNode : imagesGrid.getChildren()) { // Loop to traverse the to the node to be updated
+				    if(imageNode instanceof ImageView && GridPane.getRowIndex(imageNode) == j && GridPane.getColumnIndex(imageNode) == i) {
+				    	imagesGrid.getChildren().remove(imageNode); // remove node at i'th column and j'th row 
+				        break;
+				    }
+				}
+	            imagesGrid.add(imageView, i, j); //update new image in grid
+			} catch (IOException ex) {
+				ex.printStackTrace();
+			}
+        });
     }
     
     /**
